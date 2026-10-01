@@ -2,19 +2,18 @@
 
 #include <ll/api/memory/Hook.h>
 #include <ll/api/mod/RegisterHelper.h>
-#include <mc/world/level/storage/LevelData.h>
+#include <mc/world/level/LevelSettings.h>
 
-LL_AUTO_TYPE_INSTANCE_HOOK(LevelDataCtorHook, ll::memory::HookPriority::Normal,
-                           LevelData,
-                           &LevelData::achievementsWillBeDisabledOnLoad, bool)
-{
-    const auto& logger =
-        mfa::MForceAchievements::getInstance().getSelf().getLogger();
-    logger.debug("Hooked &LevelData::achievementsWillBeDisabledOnLoad");
-    if (getGameType() == GameType::Creative) setGameType(GameType::Survival);
-    ll::memory::dAccess<bool>(this, 1284) = false;  // mAchievementsDisabled
-    ll::memory::dAccess<bool>(this, 1504) = false;  // mCheatsEnabled
-    ll::memory::dAccess<bool>(this, 1505) = false;  // mCommandsEnabled
+// Hook LevelSettings 的成就禁用判断，直接返回 false（永不禁用成就）
+LL_AUTO_TYPE_INSTANCE_HOOK(
+    LevelSettingsHook,
+    ll::memory::HookPriority::Normal,
+    LevelSettings,
+    &LevelSettings::achievementsWillBeDisabledOnLoad,
+    bool
+) {
+    const auto& logger = mfa::MForceAchievements::getInstance().getSelf().getLogger();
+    logger.info("已拦截成就禁用检测，强制保持成就开启！");
     return false;
 }
 
@@ -31,7 +30,6 @@ bool MForceAchievements::load() const
 {
     const auto& logger = getSelf().getLogger();
     logger.debug("Loading...");
-
     return true;
 }
 
@@ -39,19 +37,16 @@ bool MForceAchievements::enable() const
 {
     const auto& logger = getSelf().getLogger();
     logger.debug("Starting up...");
-
     return true;
 }
 
 bool MForceAchievements::disable() const
 {
     const auto& logger = getSelf().getLogger();
-    logger.debug("Disabling...");
-
+    logger.debug("Shutting down...");
     return true;
 }
 
-}  // namespace mfa
+} // namespace mfa
 
-LL_REGISTER_MOD(mfa::MForceAchievements,
-                mfa::MForceAchievements::getInstance());
+LL_REGISTER_MOD(mfa::MForceAchievements, mfa::MForceAchievements::getInstance());
